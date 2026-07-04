@@ -4,9 +4,12 @@ rules:
   screenshot: allow
   static_read: allow
   form_submit: allow_sandbox_only
+  form_submit_payment: block
   payment_complete: block
   email_send: block
   sms_send: block
   db_write: block
   db_delete: block
   external_domain: block_always
+  ui_click: allow
+  ui_click_payment: mock

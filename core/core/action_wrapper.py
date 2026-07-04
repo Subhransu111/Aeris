@@ -1,6 +1,6 @@
-from core.policy_engine import PolicyEngine
-from core.mock_dispatcher import mock_response
-from core.audit_log import log_action
+from core.core.policy_engine import PolicyEngine
+from core.core.mock_dispatcher import mock_response
+from core.core.audit_log import log_action
 
 policy_engine = PolicyEngine()
 
