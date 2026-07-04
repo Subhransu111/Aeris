@@ -16,6 +16,17 @@ function getSelector(el) {
     const aria = el.getAttribute('aria-label');
     if (aria) return `${el.tagName.toLowerCase()}[aria-label="${aria.replace(/"/g, '\\"')}"]`;
 
+    // Prefer matching by visible text for nav/button-like elements when no
+    // stable attribute exists -- class names on modern component frameworks
+    // are frequently state-dependent (scroll position, active tab, etc.)
+    // and can vanish or change between the moment we extract and the
+    // moment we act, making a class-based selector silently stale.
+    const text = (el.innerText || el.value || '').trim();
+    if (text && text.length < 40 && (el.tagName === 'BUTTON' || el.tagName === 'A' || el.getAttribute('role') === 'button')) {
+        const tag = el.tagName.toLowerCase();
+        return `xpath=//${tag}[normalize-space(text())="${text.replace(/"/g, '')}"]`;
+    }
+
     let path = [];
     let node = el;
     let depth = 0;

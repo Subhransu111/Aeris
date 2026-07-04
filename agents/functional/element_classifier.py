@@ -50,8 +50,7 @@ def classify_button(button_html: dict) -> dict:
 
     if any(w in text for w in [
         "buy", "purchase", "pay", "checkout", "subscribe",
-        "select basic", "select deluxe", "select royal",
-        "get started", "start your subscription", "upgrade"
+         "start your subscription", "upgrade"
     ]):
         return {"type": "payment_action", "confidence": "high"}
 

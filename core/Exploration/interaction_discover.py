@@ -5,7 +5,7 @@ from agents.functional.element_classifier import classify_button
 
 
 def discover_interactions(page, base_url: str, base_domain: str, candidates: list,
-                           max_interactions: int = 15, agent_id: str = "functional_agent",
+                           max_interactions: int = 25, agent_id: str = "functional_agent",
                            verified_domain: str = None) -> list:
     """
     Clicks every candidate with no resolvable href and observes the result.
@@ -58,7 +58,8 @@ def discover_interactions(page, base_url: str, base_domain: str, candidates: lis
             before_url = page.url
             before_fp = compute_dom_fingerprint(page.content())
 
-            page.click(cand["selector"], timeout=3000)
+            page.locator(cand["selector"]).scroll_into_view_if_needed(timeout=3000)
+            page.click(cand["selector"], timeout=5000)
             page.wait_for_timeout(800)
 
             after_url = page.url
@@ -91,12 +92,16 @@ def discover_interactions(page, base_url: str, base_domain: str, candidates: lis
                 "classification": classification["type"],
             })
         else:
+            # Check console for errors that might explain a silent click
+            try:
+                has_error = page.evaluate("window.__aegisHadError || false")
+            except Exception:
+                has_error = False
             edges.append({
-                "trigger_text": cand["text"],
-                "trigger_selector": cand["selector"],
-                "result_type": "no_visible_change",
-                "result": None,
+                "trigger_text": cand["text"], "trigger_selector": cand["selector"],
+                "result_type": "no_visible_change", "result": None,
                 "classification": classification["type"],
+                "possible_js_error": has_error,
             })
 
     return edges

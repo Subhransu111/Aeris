@@ -155,7 +155,7 @@ def build_site_test_plan(sitemap: dict) -> list:
         for button in page_data.get("buttons", []):
             from agents.functional.element_classifier import classify_button
             classification = classify_button(button)
-            if classification["type"] in ("payment_action", "destructive_action", "logout"):
+            if classification["type"] in ("payment_action", "destructive_action", "logout","form_action"):
                 todo.append({
                     "priority": priority_counter, "type": "button_test",
                     "url": url, "auth_state": auth_state,

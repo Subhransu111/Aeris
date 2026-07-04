@@ -10,6 +10,9 @@ from core.Exploration.model_handler import dismiss_overlays
 from core.Exploration.interaction_discover import discover_interactions
 from core.Exploration.auth_handler import find_login_form, attempt_login
 
+from .diagnostics_collector import attach_diagnostics, detach_diagnostics
+from .expandable_handler import expand_collapsed_content
+from .scroll_handler import smart_scroll
 
 class SiteMap:
     def __init__(self, base_url: str):
@@ -19,6 +22,7 @@ class SiteMap:
         self.api_endpoints = set()
         self.visited = set()          # {(url, auth_state)}
         self.navigation_graph = {}
+        self.state_graph = {}
         self.fingerprint_index = {}   # fingerprint -> canonical page key
         self.login_forms_found = []   # [(url, form_dict)]
 
@@ -26,10 +30,22 @@ class SiteMap:
     def page_key(url: str, auth_state: str) -> str:
         return f"{auth_state}::{url}"
 
+    @staticmethod
+    def state_key(url: str, auth_state: str, dom_fingerprint: str) -> str:
+        """A state is a unique (url, auth, DOM-shape) combination -- so a
+        modal-open and modal-closed view of the same URL count as distinct
+        states, capturing SPA behavior a pure URL graph misses."""
+        return f"{auth_state}::{url}::{dom_fingerprint[:12]}"
+
     def add_navigation(self, from_key: str, to_key: str):
         self.navigation_graph.setdefault(from_key, [])
         if to_key not in self.navigation_graph[from_key]:
             self.navigation_graph[from_key].append(to_key)
+
+    def add_state_transition(self, from_state: str, to_state: str):
+        self.state_graph.setdefault(from_state, [])
+        if to_state not in self.state_graph[from_state]:
+            self.state_graph[from_state].append(to_state)
 
     def add_page(self, url: str, auth_state: str, data: dict, fingerprint: str) -> str:
         key = self.page_key(url, auth_state)
@@ -44,6 +60,7 @@ class SiteMap:
         return {
             "base_url": self.base_url,
             "navigation_graph": self.navigation_graph,
+            "state_graph": self.state_graph,
             "pages": self.pages,
             "api_endpoints": list(self.api_endpoints),
             "login_forms_found": [{"url": u, "form": f} for u, f in self.login_forms_found],
@@ -57,7 +74,18 @@ def is_same_origin(url: str, base_domain: str) -> bool:
         return False
 
 
-def _wait_for_spa_ready(page, max_wait_ms: int = 8000, stable_checks: int = 3):
+def _wait_for_spa_ready(page, max_wait_ms: int = 8000, stable_checks: int = 3, idle_threshold_ms: int = 500):
+    """
+    Waits for both DOM text stability AND network idle before considering
+    a page ready. SPAs often finish rendering visually before their data
+    fetches complete, or vice versa -- checking both catches more cases
+    than either alone.
+    """
+    try:
+        page.wait_for_load_state("networkidle", timeout=idle_threshold_ms * 10)
+    except Exception:
+        pass  # networkidle can time out on pages with polling/websockets - don't block on it
+
     last_len, stable_count, elapsed, interval = -1, 0, 0, 500
     while elapsed < max_wait_ms:
         page.wait_for_timeout(interval)
@@ -182,11 +210,17 @@ def _crawl_phase(page, sitemap: SiteMap, seed: list, auth_state: str,
                 sitemap.add_navigation(sitemap.page_key(referrer, auth_state), key)
             continue
 
+        page_record_shell = {}
+        diag_handles = attach_diagnostics(page, page_record_shell)
+
         try:
             page.goto(url, wait_until="load", timeout=15000)
             _wait_for_spa_ready(page)
             dismiss_overlays(page)
+            smart_scroll(page)
+            expand_collapsed_content(page)
         except Exception as e:
+            detach_diagnostics(page, diag_handles)
             sitemap.pages[key] = {"url": url, "auth_state": auth_state, "error": str(e), "reachable": False}
             sitemap.visited.add(key)
             pages_this_phase += 1
@@ -208,12 +242,15 @@ def _crawl_phase(page, sitemap: SiteMap, seed: list, auth_state: str,
                 sitemap.login_forms_found.append((url, login_form))
 
             interaction_edges = []
+            state_before = sitemap.state_key(url, auth_state, dom_fp)
+
             if run_interactions:
-                interaction_edges = discover_interactions(
-                    page, url, sitemap.base_domain, page_data["buttons"]
-                )
+                interaction_edges = discover_interactions(page, url, sitemap.base_domain, page_data["buttons"])
                 for edge in interaction_edges:
-                    if edge["result_type"] == "navigation" and edge["result"] not in queued_urls:
+                    if edge["result_type"] == "state_change":
+                        state_after = sitemap.state_key(url, auth_state, edge["result"])
+                        sitemap.add_state_transition(state_before, state_after)
+                    elif edge["result_type"] == "navigation" and edge["result"] not in queued_urls:
                         local_queue.append((edge["result"], url))
                         queued_urls.add(edge["result"])
 
@@ -230,7 +267,11 @@ def _crawl_phase(page, sitemap: SiteMap, seed: list, auth_state: str,
                 "anchors": page_data["anchors"],
                 "interaction_edges": interaction_edges,
                 "reachable": True,
+                "console_errors": page_record_shell.get("console_errors", []),
+                "console_warnings": page_record_shell.get("console_warnings", []),
+                "failed_requests": page_record_shell.get("failed_requests", []),
             }
+            detach_diagnostics(page, diag_handles)
             sitemap.add_page(url, auth_state, record, dom_fp)
 
             for link in page_data["links"]:
@@ -239,6 +280,7 @@ def _crawl_phase(page, sitemap: SiteMap, seed: list, auth_state: str,
                     queued_urls.add(link)
 
         except Exception as e:
+            detach_diagnostics(page, diag_handles)
             sitemap.pages[key] = {"url": url, "auth_state": auth_state,
                                    "error": f"Extraction failed: {str(e)}", "reachable": True}
 
@@ -264,6 +306,7 @@ def crawl(base_url: str, max_pages: int = 30, timeout_seconds: int = 120,
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
         )
         page = context.new_page()
+        page.add_init_script("window.__aegisHadError=false; window.onerror=()=>{window.__aegisHadError=true;}")
 
         def on_request(request):
             try:
