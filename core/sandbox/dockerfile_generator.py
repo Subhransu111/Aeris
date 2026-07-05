@@ -2,10 +2,10 @@ import os
 import subprocess
 
 TEMPLATES = {
-    ("node", "nextjs"): "FROM node:20\nWORKDIR /app\nCOPY . .\nRUN npm install\nRUN npm run build\nCMD [\"npm\", \"start\"]\n",
-    ("node", "react"):  "FROM node:20\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD [\"npm\", \"start\"]\n",
-    ("node", "vite"):   "FROM node:20\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD [\"npm\", \"run\", \"dev\", \"--\", \"--host\"]\n",
-    ("node", "express"): "FROM node:20\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD [\"node\", \"index.js\"]\n",
+    ("node", "nextjs"): "FROM node:20\nWORKDIR /app\nCOPY . .\nRUN npm install --legacy-peer-deps\nRUN npm run build\nCMD [\"npm\", \"start\"]\n",
+    ("node", "react"):  "FROM node:20\nWORKDIR /app\nCOPY . .\nRUN npm install --legacy-peer-deps\nCMD [\"npm\", \"start\"]\n",
+    ("node", "vite"):   "FROM node:20\nWORKDIR /app\nCOPY . .\nRUN npm install --legacy-peer-deps\nCMD [\"npm\", \"run\", \"dev\", \"--\", \"--host\"]\n",
+    ("node", "express"): "FROM node:20\nWORKDIR /app\nCOPY . .\nRUN npm install --legacy-peer-deps\nCMD [\"node\", \"index.js\"]\n",
     ("python", "django"):  "FROM python:3.11\nWORKDIR /app\nCOPY . .\nRUN pip install -r requirements.txt\nCMD [\"python\", \"manage.py\", \"runserver\", \"0.0.0.0:8000\"]\n",
     ("python", "fastapi"): "FROM python:3.11\nWORKDIR /app\nCOPY . .\nRUN pip install -r requirements.txt\nCMD [\"uvicorn\", \"main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]\n",
     ("python", "flask"):   "FROM python:3.11\nWORKDIR /app\nCOPY . .\nRUN pip install -r requirements.txt\nCMD [\"python\", \"app.py\"]\n",
@@ -30,7 +30,7 @@ def generate_dockerfile(repo_path: str, stack: dict) -> dict:
             "FROM node:20\n"
             "WORKDIR /app\n"
             "COPY . .\n"
-            "RUN npm install\n"
+            "RUN npm install --legacy-peer-deps\n"
             "ENV NODE_OPTIONS=--openssl-legacy-provider\n"
             "ENV CI=true\n"
             f"{cmd}\n"

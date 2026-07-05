@@ -13,3 +13,7 @@ rules:
   external_domain: block_always
   ui_click: allow
   ui_click_payment: mock
+  api_post_probe: allow_sandbox_only
+  api_put_probe: allow_sandbox_only
+  api_delete_probe: block
+  api_post_payment: block

@@ -301,9 +301,10 @@ def crawl(base_url: str, max_pages: int = 30, timeout_seconds: int = 120,
     start_time = time.time()
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True,args=["--disable-web-security", "--disable-features=IsolateOrigins,site-per-process"])
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+            ignore_https_errors=True,
         )
         page = context.new_page()
         page.add_init_script("window.__aegisHadError=false; window.onerror=()=>{window.__aegisHadError=true;}")

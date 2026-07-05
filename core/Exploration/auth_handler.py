@@ -23,6 +23,9 @@ def find_login_form(page_data: dict):
 
 
 def attempt_login(page, login_form: dict, username: str, password: str) -> bool:
+    console_logs = []
+    page.on("console", lambda msg: console_logs.append(msg.text))
+
     try:
         for field in login_form.get("fields", []):
             if not field.get("selector"):
@@ -30,8 +33,14 @@ def attempt_login(page, login_form: dict, username: str, password: str) -> bool:
             ftype = field["type"].lower()
             if ftype == "password":
                 page.fill(field["selector"], password)
-            elif ftype in ("email", "text") and username:
+            elif ftype in ("email", "text", "tel") and username:
                 page.fill(field["selector"], username)
+
+        # Verify what actually got typed, before submitting
+        for field in login_form.get("fields", []):
+            if field.get("selector"):
+                val = page.input_value(field["selector"])
+                print(f"[DEBUG] Field {field['name']} ({field['type']}) contains: '{val}'")
 
         if login_form.get("submit_selector"):
             page.click(login_form["submit_selector"])
@@ -40,7 +49,15 @@ def attempt_login(page, login_form: dict, username: str, password: str) -> bool:
 
         page.wait_for_timeout(1500)
         page.wait_for_load_state("load", timeout=10000)
-    except Exception:
+
+        page.screenshot(path="debug_after_login.png", full_page=True)
+        print(f"[DEBUG] URL after login attempt: {page.url}")
+        print(f"[DEBUG] Console messages: {console_logs}")
+        body_text = page.evaluate("document.body.innerText")
+        print(f"[DEBUG] Page text snippet: {body_text[:300]}")
+
+    except Exception as e:
+        print(f"[DEBUG] Login exception: {e}")
         return False
 
     return verify_login_success(page)

@@ -59,11 +59,9 @@ def find_responsive_port(host_port_map: dict, timeout_seconds: int = 60) -> int:
         for internal_port, host_port in host_port_map.items():
             try:
                 resp = requests.get(f"http://127.0.0.1:{host_port}", timeout=2)
-                print(f"[DEBUG] port {internal_port}->{host_port}: status {resp.status_code}")
                 if resp.status_code < 500:
                     return host_port
             except requests.exceptions.RequestException as e:
-                print(f"[DEBUG] port {internal_port}->{host_port}: {type(e).__name__}: {e}")
                 continue
         time.sleep(2)
     return None
