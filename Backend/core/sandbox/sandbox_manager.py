@@ -1,20 +1,20 @@
 import uuid
 import tempfile
 import os
-from Backend.core.sandbox.repository_manager import clone_repo
-from Backend.core.sandbox.technology_detector import detect_stack
-from Backend.core.sandbox.dockerfile_generator import generate_dockerfile, build_with_buildpack
-from Backend.core.sandbox.image_builder import build_image
-from Backend.core.sandbox.container_manager import (
+from core.sandbox.repository_manager import clone_repo
+from core.sandbox.technology_detector import detect_stack
+from core.sandbox.dockerfile_generator import generate_dockerfile, build_with_buildpack
+from core.sandbox.image_builder import build_image
+from core.sandbox.container_manager import (
     run_container, get_host_port_map, health_check, find_responsive_port, get_logs, stop_and_remove, COMMON_PORTS
 )
-from Backend.core.sandbox.execution_context import ExecutionContext
-from Backend.core.sandbox.dependency_detector import detect_db_dependency
-from Backend.core.sandbox.env_scanner import scan_env_vars, generate_env_values ,generate_frontend_env_values, scan_hardcoded_localhost
-from Backend.core.sandbox.network_manager import create_isolated_network, remove_network
-from Backend.core.sandbox.db_provisioner import provision_database, teardown_database
-from Backend.core.budget.timeout_watchdog import run_with_timeout, TimeoutException
-from Backend.core.budget.cleanup_manager import full_cleanup, cleanup_docker_image
+from core.sandbox.execution_context import ExecutionContext
+from core.sandbox.dependency_detector import detect_db_dependency
+from core.sandbox.env_scanner import scan_env_vars, generate_env_values ,generate_frontend_env_values, scan_hardcoded_localhost
+from core.sandbox.network_manager import create_isolated_network, remove_network
+from core.sandbox.db_provisioner import provision_database, teardown_database
+from core.budget.timeout_watchdog import run_with_timeout, TimeoutException
+from core.budget.cleanup_manager import full_cleanup, cleanup_docker_image
 import docker
 
 client = docker.from_env()
