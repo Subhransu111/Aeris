@@ -4,9 +4,9 @@ load testing. Load tests are tier-gated and budget-capped by design -
 this agent NEVER decides its own concurrency; that's Budget Enforcer's
 job, enforced regardless of what this agent requests.
 """
-from agents.performance.lighthouse_runner import run_lighthouse
-from agents.performance.load_test_runner import run_load_test
-from core.budget.resource_limits import get_limits
+from Backend.agents.performance.lighthouse_runner import run_lighthouse
+from Backend.agents.performance.load_test_runner import run_load_test
+from Backend.core.budget.resource_limits import get_limits
 
 
 def run_performance_agent(sitemap: dict, backend_base_url: str = None,

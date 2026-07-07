@@ -143,7 +143,7 @@ def build_site_test_plan(sitemap: dict) -> list:
             priority_counter += 1
 
         for form in page_data.get("forms", []):
-            from agents.functional.element_classifier import classify_form
+            from Backend.agents.functional.element_classifier import classify_form
             classification = classify_form(form)
             todo.append({
                 "priority": priority_counter, "type": "form_test",
@@ -153,7 +153,7 @@ def build_site_test_plan(sitemap: dict) -> list:
             priority_counter += 1
 
         for button in page_data.get("buttons", []):
-            from agents.functional.element_classifier import classify_button
+            from Backend.agents.functional.element_classifier import classify_button
             classification = classify_button(button)
             if classification["type"] in ("payment_action", "destructive_action", "logout","form_action"):
                 todo.append({

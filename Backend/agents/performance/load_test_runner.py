@@ -8,7 +8,7 @@ import subprocess
 import json
 import tempfile
 import os
-from core.budget.budget_enforcer import evaluate_load_test_plan
+from Backend.core.budget.budget_enforcer import evaluate_load_test_plan
 
 
 K6_SCRIPT_TEMPLATE = """

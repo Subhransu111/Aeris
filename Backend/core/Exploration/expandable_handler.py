@@ -9,7 +9,7 @@ targets a different candidate set: ARIA accordion/tab roles and common
 class-name patterns, not every clickable element on the page.
 """
 from .js_helper import GET_SELECTOR_JS
-from core.core.action_wrapper import execute_action
+from Backend.core.core.action_wrapper import execute_action
 
 DETECT_EXPANDABLE_JS = GET_SELECTOR_JS + """
 () => {

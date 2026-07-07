@@ -2,13 +2,13 @@ from playwright.sync_api import sync_playwright
 from urllib.parse import urljoin, urlparse
 import time
 
-from core.Exploration.dom_fingerprint import compute_dom_fingerprint
-from core.Exploration.page_classifier import classify_page
-from core.Exploration.screenshot_manager import get_screenshot_path
-from core.Exploration.js_helper import GET_SELECTOR_JS
-from core.Exploration.model_handler import dismiss_overlays
-from core.Exploration.interaction_discover import discover_interactions
-from core.Exploration.auth_handler import find_login_form, attempt_login
+from Backend.core.Exploration.dom_fingerprint import compute_dom_fingerprint
+from Backend.core.Exploration.page_classifier import classify_page
+from Backend.core.Exploration.screenshot_manager import get_screenshot_path
+from Backend.core.Exploration.js_helper import GET_SELECTOR_JS
+from Backend.core.Exploration.model_handler import dismiss_overlays
+from Backend.core.Exploration.interaction_discover import discover_interactions
+from Backend.core.Exploration.auth_handler import find_login_form, attempt_login
 
 from .diagnostics_collector import attach_diagnostics, detach_diagnostics
 from .expandable_handler import expand_collapsed_content

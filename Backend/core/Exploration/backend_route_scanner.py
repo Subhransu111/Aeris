@@ -5,9 +5,9 @@ scanner directly, so adding a new framework later doesn't require
 changing security_agent.py.
 """
 import os
-from core.Exploration.api_route_scanner import scan_express_routes, resolve_base_paths
-from core.Exploration.flask_route_scanner import scan_flask_routes
-from core.Exploration.django_route_scanner import scan_django_routes
+from Backend.core.Exploration.api_route_scanner import scan_express_routes, resolve_base_paths
+from Backend.core.Exploration.flask_route_scanner import scan_flask_routes
+from Backend.core.Exploration.django_route_scanner import scan_django_routes
 
 
 def detect_backend_framework(repo_path: str) -> str:

@@ -17,9 +17,9 @@ Every real browser action goes through execute_action() first. No action
 here bypasses the Policy Engine, regardless of who is calling it.
 """
 from urllib.parse import urlparse
-from core.core.action_wrapper import execute_action
-from agents.functional.test_planner import plan_form_tests, plan_button_tests
-from core.Exploration.dom_fingerprint import compute_dom_fingerprint
+from Backend.core.core.action_wrapper import execute_action
+from Backend.agents.functional.test_planner import plan_form_tests, plan_button_tests
+from Backend.core.Exploration.dom_fingerprint import compute_dom_fingerprint
 
 
 def _classify_field_type(field: dict) -> str:
@@ -88,7 +88,7 @@ def _fill_and_submit_form(page, form: dict, field_values: dict, agent_id: str,
         after_url = page.url
         after_fp = compute_dom_fingerprint(page.content())
 
-        from core.Exploration.screenshot_manager import get_screenshot_path
+        from Backend.core.Exploration.screenshot_manager import get_screenshot_path
     
         debug_screenshot = get_screenshot_path(f"exec_{form.get('action','noform')}_{hash(str(field_values))%10000}", "screenshots")
         try:

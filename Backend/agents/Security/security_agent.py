@@ -4,13 +4,13 @@ Security Agent: coordinates all security checks. Ordered cheapest-first
 so a fast run gets the highest-value findings even if later steps time out.
 """
 from urllib.parse import urlparse
-from agents.Security.frontend_checks import check_reflected_xss, check_sqli_error_disclosure
-from agents.Security.api_checks import check_missing_auth, check_idor_pattern, check_rate_limiting, check_open_redirect
-from agents.Security.header_checks import check_response_headers
-from agents.Security.secret_scanner import scan_for_secrets
-from agents.Security.dependency_scanner import scan_npm_dependencies
-from agents.Security.clickjacking_check import check_clickjacking
-from core.Exploration.backend_route_scanner import scan_backend_routes
+from Backend.agents.Security.frontend_checks import check_reflected_xss, check_sqli_error_disclosure
+from Backend.agents.Security.api_checks import check_missing_auth, check_idor_pattern, check_rate_limiting, check_open_redirect
+from Backend.agents.Security.header_checks import check_response_headers
+from Backend.agents.Security.secret_scanner import scan_for_secrets
+from Backend.agents.Security.dependency_scanner import scan_npm_dependencies
+from Backend.agents.Security.clickjacking_check import check_clickjacking
+from Backend.core.Exploration.backend_route_scanner import scan_backend_routes
 
 def run_security_agent(page, sitemap: dict, base_url: str, verified_domain: str,
                          backend_repo_path: str = None, backend_base_url: str = None,

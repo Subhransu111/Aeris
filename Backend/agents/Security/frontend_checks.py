@@ -7,7 +7,7 @@ probes (detection strings), never actual exploitation payloads.
 """
 import json
 
-from core.core.action_wrapper import execute_action
+from Backend.core.core.action_wrapper import execute_action
 
 
 REFLECTED_XSS_MARKER = "AEGISXSSPROBE12345"
