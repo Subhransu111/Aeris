@@ -10,8 +10,7 @@ from agents.Security.header_checks import check_response_headers
 from agents.Security.secret_scanner import scan_for_secrets
 from agents.Security.dependency_scanner import scan_npm_dependencies
 from agents.Security.clickjacking_check import check_clickjacking
-from core.Exploration.api_route_scanner import scan_express_routes, resolve_base_paths
-
+from core.Exploration.backend_route_scanner import scan_backend_routes
 
 def run_security_agent(page, sitemap: dict, base_url: str, verified_domain: str,
                          backend_repo_path: str = None, backend_base_url: str = None,
@@ -25,8 +24,8 @@ def run_security_agent(page, sitemap: dict, base_url: str, verified_domain: str,
         for finding in scan_npm_dependencies(backend_repo_path):
             evidence.append({"todo_type": "security_check", "url": base_url, **finding})
 
-    if backend_repo_path and backend_base_url:  
-        routes = resolve_base_paths(backend_repo_path, scan_express_routes(backend_repo_path))
+    if backend_repo_path and backend_base_url:
+        routes = scan_backend_routes(backend_repo_path)  
         backend_domain = urlparse(backend_base_url).netloc
         for finding in check_missing_auth(backend_base_url, routes, agent_id, backend_domain, backend_domain):
             evidence.append({"todo_type": "security_check", "url": backend_base_url, **finding})
