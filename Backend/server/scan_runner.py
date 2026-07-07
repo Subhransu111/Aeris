@@ -38,6 +38,25 @@ def run_full_scan(scan_id: str, repo_url: str, app_name: str,
             "current_step": step,
             "error": error,
         }
+    import requests
+    import time
+
+    def wait_for_server_ready(url: str, max_wait_seconds: int = 20) -> bool:
+        deadline = time.time() + max_wait_seconds
+        consecutive_ok = 0
+        while time.time() < deadline:
+            try:
+                resp = requests.get(url, timeout=3)
+                if resp.status_code < 500:
+                    consecutive_ok += 1
+                    if consecutive_ok >= 2:
+                        return True
+                else:
+                    consecutive_ok = 0
+            except requests.exceptions.RequestException:
+                consecutive_ok = 0
+            time.sleep(1)
+        return False
 
     sandbox_result = None
     run_id = None
@@ -58,6 +77,13 @@ def run_full_scan(scan_id: str, repo_url: str, app_name: str,
         backend_base_url = f"http://127.0.0.1:{sandbox_result['backend_host_port']}"
         backend_path = f"{sandbox_result['dest_dir']}\\{backend_subdir or 'Backend'}"
 
+        update_status("waiting_for_server")
+        server_ready = wait_for_server_ready(target_url)
+        if not server_ready:
+            SCAN_STATUS[scan_id] = {"status": "failed", "error": "Frontend server did not become ready in time"}
+            teardown_multi_service_sandbox(sandbox_result)
+            return
+        
         run_id = start_run(target_url)
 
         try:

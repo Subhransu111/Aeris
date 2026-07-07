@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "@fontsource-variable/geist";
+@import "tailwindcss";
+
+
+@theme {
+  /* -- palette -------------------------------------------------- */
+  --color-ink: #05070a;         /* page background */
+  --color-panel: #0b0f14;       /* card / IDE background */
+  --color-panel-2: #10161d;     /* raised panel / input background */
+  --color-line: #1c2a33;        /* borders, hairlines */
+  --color-line-soft: #142028;   /* faint borders */
+  --color-cyan: #4ce0ff;        /* primary signal */
+  --color-cyan-dim: #1c6f85;
+  --color-magenta: #ff4d7e;     /* critical / alert */
+  --color-magenta-dim: #7a2740;
+  --color-amber: #ffb454;       /* warnings / strings in code */
+  --color-mint: #6ee7b0;        /* success / completed */
+  --color-paper: #e8edf2;       /* primary text */
+  --color-fog: #8b98a9;         /* muted text */
+  --color-fog-2: #55636f;       /* dimmest text */
+
+  /* -- type --------------------------------------------------- */
+  --font-display: "Space Grotesk", "Geist Variable", sans-serif;
+  --font-sans: "Geist Variable", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+}
+
+/* ---------------------------------------------------------------
+   Dot-grid backdrop
+---------------------------------------------------------------- */
+.bg-dot-grid {
+  background-image: radial-gradient(circle, rgba(76, 224, 255, 0.16) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+/* ---------------------------------------------------------------
+   Radar sweep (hero, left column)
+---------------------------------------------------------------- */
+.radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 300deg,
+    rgba(76, 224, 255, 0.28) 340deg,
+    rgba(76, 224, 255, 0.55) 360deg
+  );
+  animation: spin 6s linear infinite;
+  mask-image: radial-gradient(circle, black 60%, transparent 72%);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.radar-ring {
+  position: absolute;
+  border: 1px solid rgba(76, 224, 255, 0.18);
+  border-radius: 9999px;
+}
+
+/* Drifting "packet" dots */
+.packet {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--color-cyan);
+  box-shadow: 0 0 8px 2px rgba(76, 224, 255, 0.7);
+  animation: drift linear infinite;
+}
+
+@keyframes drift {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  10%  { opacity: 0.9; }
+  90%  { opacity: 0.5; }
+  100% { transform: translateY(-160px) translateX(var(--drift-x, 20px)); opacity: 0; }
+}
+
+/* ---------------------------------------------------------------
+   Scan beam (IDE code window + QA run terminal)
+---------------------------------------------------------------- */
+.scan-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 42px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(76, 224, 255, 0.14) 45%,
+    rgba(76, 224, 255, 0.34) 50%,
+    rgba(76, 224, 255, 0.14) 55%,
+    transparent
+  );
+  animation: sweep 4.2s ease-in-out infinite;
+}
+
+@keyframes sweep {
+  0%   { transform: translateY(-10%); }
+  50%  { transform: translateY(920%); }
+  100% { transform: translateY(-10%); }
+}
+
+.finding-pulse {
+  animation: pulse-line 4.2s ease-in-out infinite;
+}
+
+@keyframes pulse-line {
+  0%, 40%, 100% { background-color: transparent; }
+  47%, 58% { background-color: rgba(255, 77, 126, 0.12); }
+}
+
+.finding-badge {
+  opacity: 0;
+  animation: badge-in 4.2s ease-in-out infinite;
+}
+
+@keyframes badge-in {
+  0%, 44% { opacity: 0; transform: translateX(-4px); }
+  50%, 56% { opacity: 1; transform: translateX(0); }
+  64%, 100% { opacity: 0; transform: translateX(-4px); }
+}
+
+/* ---------------------------------------------------------------
+   Terminal cursor
+---------------------------------------------------------------- */
+.term-cursor::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 2px;
+  background: var(--color-cyan);
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radar-sweep,
+  .packet,
+  .scan-beam,
+  .finding-pulse,
+  .finding-badge,
+  .term-cursor::after {
+    animation: none !important;
+  }
+}
