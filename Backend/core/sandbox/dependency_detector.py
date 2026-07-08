@@ -6,6 +6,8 @@ DB_SIGNATURES = {
     "mongodb": {"type": "mongodb", "image": "mongo:7", "port": 27017, "uri_env_hint": "mongodb://{host}:27017/testdb"},
     "pg": {"type": "postgres", "image": "postgres:16", "port": 5432, "uri_env_hint": "postgresql://postgres:postgres@{host}:5432/testdb"},
     "sequelize": {"type": "postgres", "image": "postgres:16", "port": 5432, "uri_env_hint": "postgresql://postgres:postgres@{host}:5432/testdb"},
+    "@neondatabase/serverless": {"type": "postgres", "image": "postgres:16", "port": 5432, "uri_env_hint": "postgresql://postgres:postgres@{host}:5432/testdb"},
+    "drizzle-orm": {"type": "postgres", "image": "postgres:16", "port": 5432, "uri_env_hint": "postgresql://postgres:postgres@{host}:5432/testdb"},
     "mysql2": {"type": "mysql", "image": "mysql:8", "port": 3306, "uri_env_hint": "mysql://root:root@{host}:3306/testdb"},
     "redis": {"type": "redis", "image": "redis:7", "port": 6379, "uri_env_hint": "redis://{host}:6379"},
 }

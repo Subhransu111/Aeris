@@ -4,7 +4,7 @@ sequences matching known journey patterns. This treats the crawl output
 as a graph-search problem: does a path exist from a landing-classified
 page through the required intermediate classifications to the target?
 """
-from Backend.agents.journey.journey_definitions import JOURNEY_PATTERNS
+from .journey_definitions import JOURNEY_PATTERNS
 
 
 def _build_classification_map(sitemap: dict) -> dict:

@@ -1,7 +1,7 @@
 from urllib.parse import urlparse
-from Backend.core.Exploration.dom_fingerprint import compute_dom_fingerprint
-from Backend.core.core.action_wrapper import execute_action
-from Backend.agents.functional.element_classifier import classify_button
+from .dom_fingerprint import compute_dom_fingerprint
+from core.core.action_wrapper import execute_action
+from agents.functional.element_classifier import classify_button
 
 
 def discover_interactions(page, base_url: str, base_domain: str, candidates: list,

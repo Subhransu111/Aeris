@@ -12,7 +12,7 @@ accepting cookies in a way that changes site behavior). We only fall back
 to the affirmative option if no negative one is present, since some modals
 are genuinely un-skippable gates.
 """
-from Backend.core.Exploration.js_helper import GET_SELECTOR_JS
+from .js_helper import GET_SELECTOR_JS
 
 NEGATIVE_PATTERNS = ["not now", "no thanks", "maybe later", "skip", "later", "cancel"]
 NEUTRAL_CLOSE_PATTERNS = ["close", "dismiss", "×", "x", "got it", "ok"]

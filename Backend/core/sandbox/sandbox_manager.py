@@ -19,8 +19,22 @@ import docker
 
 client = docker.from_env()
 
-def create_sandbox(repo_url: str, context: ExecutionContext, subdirectory: str = None) -> dict:
-    dest_dir = os.path.join(tempfile.gettempdir(), f"aegis_{uuid.uuid4().hex[:8]}")
+def create_sandbox(repo_url: str, context: ExecutionContext,
+                   frontend_subdir: str = None, backend_subdir: str = None,
+                   subdirectory: str = None) -> dict:
+    """Create a sandbox for a repository. This function auto-detects project
+    layout and runs either a multi-service sandbox (frontend+backend) or a
+    single-service sandbox (frontend-only or backend-only).
+
+    Parameters mirror the old API but prefer passing `frontend_subdir` and
+    `backend_subdir` when the caller knows candidate dirs. If left None the
+    function will try reasonable defaults and heuristics.
+    """
+    # Prepare destination directory for the cloned repo
+    dest_dir = os.path.join(
+        tempfile.gettempdir(),
+        f"aegis_{uuid.uuid4().hex[:8]}"
+    )
     container_name = f"aegis-sandbox-{uuid.uuid4().hex[:8]}"
     container = None
     db_container = None
@@ -28,15 +42,70 @@ def create_sandbox(repo_url: str, context: ExecutionContext, subdirectory: str =
 
     try:
         clone_repo(repo_url, dest_dir)
-        stack = detect_stack(dest_dir, subdirectory=subdirectory)
 
-        if stack["framework"] == "multi_service":
-            full_cleanup(dest_dir)
-            return {"status": "multi_service_detected", "services": stack["services"]}
+        # Detect candidate frontend/backend paths (only if dirs exist)
+        frontend_path = (os.path.join(dest_dir, frontend_subdir)
+                         if frontend_subdir and os.path.isdir(os.path.join(dest_dir, frontend_subdir))
+                         else None)
+        backend_path = (os.path.join(dest_dir, backend_subdir)
+                        if backend_subdir and os.path.isdir(os.path.join(dest_dir, backend_subdir))
+                        else None)
 
-        build_path = os.path.join(dest_dir, subdirectory) if subdirectory else dest_dir
+        # If user passed a legacy single `subdirectory`, respect it
+        if subdirectory and not frontend_path and not backend_path:
+            candidate = os.path.join(dest_dir, subdirectory)
+            if os.path.isdir(candidate):
+                # assume single-service hosted at given subdirectory
+                # decide whether it's frontend or backend by stack detection
+                detected = detect_stack(dest_dir, subdirectory=subdirectory)
+                if detected.get("framework") == "multi_service":
+                    # fall through to multi-service handling below
+                    frontend_path = os.path.join(dest_dir, subdirectory)
+                    backend_path = None
+                else:
+                    # treat as single build path
+                    frontend_path = candidate if detected.get("type") == "frontend" else None
+                    backend_path = candidate if detected.get("type") == "backend" else None
 
-        # --- NEW: detect DB dependency + env vars before building ---
+        # If both frontend and backend dirs exist -> delegate to multi-service flow
+        if frontend_path and backend_path:
+            return create_multi_service_sandbox(
+                repo_url, context,
+                frontend_subdir=frontend_subdir or "Frontend",
+                backend_subdir=backend_subdir or "Backend",
+                dest_dir=dest_dir,
+            )
+
+        # If neither explicit subdir was provided, attempt to detect root-level roles
+        if not frontend_path and not backend_path:
+            # Use detect_stack heuristics at repo root to infer type
+            root_stack = detect_stack(dest_dir)
+            if root_stack.get("framework") == "multi_service":
+                # Repo appears monorepo-like; try default names
+                maybe_front = os.path.join(dest_dir, "Frontend")
+                maybe_back = os.path.join(dest_dir, "Backend")
+                if os.path.isdir(maybe_front) and os.path.isdir(maybe_back):
+                    return create_multi_service_sandbox(repo_url, context,
+                                                        frontend_subdir="Frontend", backend_subdir="Backend",
+                                                        dest_dir=dest_dir)
+            # heuristics: treat as frontend-only if frontend-like indicators exist
+            if root_stack.get("type") == "frontend" or root_stack.get("framework") in ("nextjs", "react", "vite"):
+                frontend_path = dest_dir
+            elif root_stack.get("type") == "backend" or root_stack.get("framework") in ("express", "flask", "django", "fastapi"):
+                backend_path = dest_dir
+
+        # Choose single-service build path based on detection
+        build_path = frontend_path or backend_path or dest_dir
+        stack = detect_stack(build_path)
+
+        if stack.get("framework") == "multi_service":
+            # If detect_stack thinks this is multi_service, delegate upward
+            return create_multi_service_sandbox(repo_url, context,
+                                                frontend_subdir=frontend_subdir or "Frontend",
+                                                backend_subdir=backend_subdir or "Backend",
+                                                dest_dir=dest_dir)
+
+        # --- single-service flow (adapted from original implementation) ---
         db_info = detect_db_dependency(build_path)
         env_vars_found = scan_env_vars(build_path)
 
@@ -50,11 +119,12 @@ def create_sandbox(repo_url: str, context: ExecutionContext, subdirectory: str =
 
         app_port = "5000"
         env_values = generate_env_values(env_vars_found, db_info, db_host, app_port=app_port)
-        # write .env file into build context so it's picked up at container start
-        env_file_path = os.path.join(build_path, ".env")
-        with open(env_file_path, "w") as f:
-            for k, v in env_values.items():
-                f.write(f"{k}={v}\n")
+        # write .env only if the build path is an existing directory
+        if os.path.isdir(build_path):
+            env_file_path = os.path.join(build_path, ".env")
+            with open(env_file_path, "w") as f:
+                for k, v in env_values.items():
+                    f.write(f"{k}={v}\n")
 
         gen_result = generate_dockerfile(build_path, stack)
         if gen_result["method"] == "failed":
@@ -90,7 +160,7 @@ def create_sandbox(repo_url: str, context: ExecutionContext, subdirectory: str =
         
         import time as _t
         _t.sleep(2)
-        from Backend.core.sandbox.container_manager import get_container_status
+        from .container_manager import get_container_status
         status_info = get_container_status(container)
         if status_info["status"] != "running":
             crash_logs = get_logs(container)
@@ -150,13 +220,13 @@ def teardown_sandbox(result: dict):
 ## multi_service_sandbox :
 def create_multi_service_sandbox(repo_url: str, context: ExecutionContext,
                                    frontend_subdir: str = "Frontend",
-                                   backend_subdir: str = "Backend") -> dict:
+                                   backend_subdir: str = "Backend",
+                                   dest_dir: str = None) -> dict:
     """
     Builds and runs Frontend + Backend + DB (if needed) together on one
     isolated network. Backend stays internal-only; only Frontend's port
     is exposed to the host, matching how the real app actually runs.
     """
-    dest_dir = os.path.join(tempfile.gettempdir(), f"aegis_{uuid.uuid4().hex[:8]}")
     backend_container_name = f"aegis-backend-{uuid.uuid4().hex[:8]}"
     frontend_container_name = f"aegis-frontend-{uuid.uuid4().hex[:8]}"
     backend_container = None
@@ -165,11 +235,16 @@ def create_multi_service_sandbox(repo_url: str, context: ExecutionContext,
     network_name = None
 
     try:
-        clone_repo(repo_url, dest_dir)
+        # If a dest_dir was provided, assume the repo is already cloned there
+        if dest_dir is None:
+            dest_dir = os.path.join(tempfile.gettempdir(), f"aegis_{uuid.uuid4().hex[:8]}")
+            clone_repo(repo_url, dest_dir)
         network_name = create_isolated_network()
 
         # ---------- Backend ----------
         backend_path = os.path.join(dest_dir, backend_subdir)
+        if not os.path.isdir(backend_path):
+            raise RuntimeError(f"Backend directory not found: {backend_path}")
         backend_stack = detect_stack(dest_dir, subdirectory=backend_subdir)
 
         db_info = detect_db_dependency(backend_path)
@@ -182,7 +257,8 @@ def create_multi_service_sandbox(repo_url: str, context: ExecutionContext,
         backend_env_vars = scan_env_vars(backend_path)
         backend_app_port = "5000"
         backend_env_values = generate_env_values(backend_env_vars, db_info, db_host, app_port=backend_app_port)
-        with open(os.path.join(backend_path, ".env"), "w") as f:
+        env_file = os.path.join(backend_path, ".env")
+        with open(env_file, "w") as f:
             for k, v in backend_env_values.items():
                 f.write(f"{k}={v}\n")
 
@@ -216,6 +292,8 @@ def create_multi_service_sandbox(repo_url: str, context: ExecutionContext,
 
         # ---------- Frontend ----------
         frontend_path = os.path.join(dest_dir, frontend_subdir)
+        if not os.path.isdir(frontend_path):
+            raise RuntimeError(f"Frontend directory not found: {frontend_path}")
         frontend_stack = detect_stack(dest_dir, subdirectory=frontend_subdir)
 
         hardcoded_localhost_findings = scan_hardcoded_localhost(frontend_path)
@@ -224,7 +302,8 @@ def create_multi_service_sandbox(repo_url: str, context: ExecutionContext,
         frontend_env_values, matched_api_var = generate_frontend_env_values(
             frontend_env_vars, "127.0.0.1", backend_host_port
         )
-        with open(os.path.join(frontend_path, ".env"), "w") as f:
+        env_file = os.path.join(frontend_path, ".env")
+        with open(env_file, "w") as f:
             for k, v in frontend_env_values.items():
                 f.write(f"{k}={v}\n")
 

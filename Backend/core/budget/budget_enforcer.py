@@ -1,5 +1,5 @@
-from Backend.core.budget.resource_limits import get_limits
-from Backend.core.budget.cost_estimator import estimate_load_test_cost, estimate_llm_cost
+from .resource_limits import get_limits
+from .cost_estimator import estimate_load_test_cost, estimate_llm_cost
 
 class BudgetDecision:
     def __init__(self, allowed: bool, reason: str, requires_confirmation: bool = False, estimate: dict = None):

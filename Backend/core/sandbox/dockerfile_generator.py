@@ -20,11 +20,17 @@ def generate_dockerfile(repo_path: str, stack: dict) -> dict:
     if stack["language"] == "node":
         if stack["framework"] == "vite":
             cmd = 'CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]'
+            build_step = ""
+        elif stack["framework"] == "nextjs":
+            cmd = 'CMD ["npm", "start"]'
+            build_step = "RUN npm run build\n"
         elif stack.get("start_script"):
             cmd = 'CMD ["npm", "start"]'
+            build_step = ""
         else:
             entry = stack.get("entry_point", "index.js")
             cmd = f'CMD ["node", "{entry}"]'
+            build_step = ""
 
         content = (
             "FROM node:20\n"
@@ -33,6 +39,7 @@ def generate_dockerfile(repo_path: str, stack: dict) -> dict:
             "RUN npm install --legacy-peer-deps\n"
             "ENV NODE_OPTIONS=--openssl-legacy-provider\n"
             "ENV CI=true\n"
+            f"{build_step}"
             f"{cmd}\n"
         )
         out_path = os.path.join(repo_path, "Dockerfile.aegis")

@@ -6,7 +6,7 @@ already permitted elsewhere. DELETE and payment routes stay blocked/mocked.
 """
 import requests
 import re
-from Backend.core.core.action_wrapper import execute_action
+from core.core.action_wrapper import execute_action
 
 SAFE_PROBE_PAYLOAD = {"aegis_test_field": "aegis_probe_value"}
 

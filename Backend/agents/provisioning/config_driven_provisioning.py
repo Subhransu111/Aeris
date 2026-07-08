@@ -7,8 +7,8 @@ fill/submit/step-through, with safety nets for CAPTCHA/OAuth still active
 in case the config becomes stale (e.g. app was redesigned).
 """
 from core.core.action_wrapper import execute_action
-from .blocker_detector import detect_blocker
-from .success_detector import detect_registration_success
+from agents.provisioning.blocker_detector import detect_blocker
+from agents.provisioning.success_detector import detect_registration_success
 
 
 def _extract_current_form_fields(page) -> list:
